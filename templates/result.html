@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Analysis Result</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7fb; color: #1f2937; margin: 0; padding: 0; }
+        .container { max-width: 960px; margin: 40px auto; background: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h2, h3 { margin-top: 0; color: #0f172a; }
+        .card { padding: 16px; border-radius: 12px; background: #eff6ff; margin-bottom: 16px; }
+        .badge { display: inline-block; padding: 6px 10px; border-radius: 999px; background: #2563eb; color: white; font-size: 13px; font-weight: 700; margin-right: 6px; }
+        .badge.green { background: #059669; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: left; vertical-align: top; }
+        th { background: #f8fafc; }
+        tr.best-row { background: #ecfdf5; }
+        .actions { margin-top: 18px; }
+        a { color: #2563eb; text-decoration: none; font-weight: 600; }
+        .feature-list { margin: 0; padding-left: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Phishing Detection &amp; XAI Comparison</h2>
+        <div class="card">
+            <p><strong>Analysis type:</strong> {{ analysis_type|upper }}</p>
+            <p><strong>Analyzed {{ input_label }}:</strong> {{ input_value }}</p>
+            <p>
+                <strong>Best ML algorithm:</strong>
+                <span class="badge green">{{ best_model }}</span>
+                ({{ best_prediction }}, confidence: {{ best_confidence }})
+            </p>
+            <p>
+                <strong>Best explainability method:</strong>
+                <span class="badge">{{ best_explainer }}</span>
+            </p>
+            <p><strong>Summary:</strong> {{ explanation }}</p>
+        </div>
+
+        <h3>ML Algorithm Comparison</h3>
+        <table>
+            <tr>
+                <th>Algorithm</th>
+                <th>Robustness</th>
+                <th>Complexity (s)</th>
+                <th>Confidence</th>
+                <th>Score</th>
+                <th>Prediction</th>
+            </tr>
+            {% for item in model_results %}
+            <tr{% if item.name == best_model %} class="best-row"{% endif %}>
+                <td>{{ item.name }}{% if item.name == best_model %} ★{% endif %}</td>
+                <td>{{ item.robustness }}</td>
+                <td>{{ item.complexity }}</td>
+                <td>{{ item.confidence }}</td>
+                <td>{{ item.score }}</td>
+                <td>{{ item.prediction }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Explainability Method Comparison</h3>
+        <p>Evaluated on the best ML algorithm: <strong>{{ best_model }}</strong></p>
+        <table>
+            <tr>
+                <th>Method</th>
+                <th>Robustness</th>
+                <th>Complexity (s)</th>
+                <th>Score</th>
+                <th>Top Features</th>
+            </tr>
+            {% for item in explainer_results %}
+            <tr{% if item.name == best_explainer %} class="best-row"{% endif %}>
+                <td>{{ item.name }}{% if item.name == best_explainer %} ★{% endif %}</td>
+                <td>{{ item.robustness }}</td>
+                <td>{{ item.complexity }}</td>
+                <td>{{ item.score }}</td>
+                <td>
+                    <ul class="feature-list">
+                        {% for feature in item.top_features %}
+                        <li>{{ feature.feature }}: {{ feature.importance }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Top Features from Best Explainability Method</h3>
+        <table>
+            <tr><th>Feature</th><th>Importance</th></tr>
+            {% for item in selected_top_features %}
+            <tr>
+                <td>{{ item.feature }}</td>
+                <td>{{ item.importance }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h3>Extracted Features</h3>
+        <table>
+            <tr><th>Feature</th><th>Value</th></tr>
+            {% for key in feature_columns %}
+            <tr><td>{{ key }}</td><td>{{ features[key] }}</td></tr>
+            {% endfor %}
+        </table>
+
+        <div class="actions">
+            <a href="/">Analyze another</a>
+        </div>
+    </div>
+</body>
+</html>

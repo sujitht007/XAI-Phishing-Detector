@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>XAI Phishing Detector</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>XAI Phishing Detector</h1>
+    <p>Analyze a URL, email, or phone number using your local Flask server.</p>
+
+    <div class="selectors">
+      <button class="mode-btn active" data-mode="url">URL</button>
+      <button class="mode-btn" data-mode="email">Email</button>
+      <button class="mode-btn" data-mode="phone">Phone</button>
+    </div>
+
+    <form id="analyze-form">
+      <div class="panel" id="url-panel">
+        <label for="url-input">URL</label>
+        <input id="url-input" name="url" placeholder="https://example.com" />
+        <button type="button" id="fill-url-btn" class="small-btn">Use current page URL</button>
+      </div>
+
+      <div class="panel hidden" id="email-panel">
+        <label for="email-sender">Sender</label>
+        <input id="email-sender" name="sender" placeholder="security@example.com" />
+
+        <label for="email-subject">Subject</label>
+        <input id="email-subject" name="subject" placeholder="Urgent: Verify your account" />
+
+        <label for="email-body">Body</label>
+        <textarea id="email-body" name="body" rows="5" placeholder="Paste the email content here..."></textarea>
+      </div>
+
+      <div class="panel hidden" id="phone-panel">
+        <label for="phone-input">Phone number</label>
+        <input id="phone-input" name="phone" placeholder="+1 800 123 4567" />
+      </div>
+
+      <button type="submit" id="submit-btn">Analyze</button>
+    </form>
+
+    <div id="message" class="message"></div>
+    <div id="result" class="result hidden"></div>
+    <p class="note">Note: your Flask app must be running at <code>http://localhost:5000</code>.</p>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

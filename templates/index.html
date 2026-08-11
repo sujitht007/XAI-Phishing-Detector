@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>XAI Phishing Detector</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f7fb; color: #1f2937; margin: 0; padding: 0; }
+        .container { max-width: 760px; margin: 40px auto; background: white; padding: 32px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+        h2 { margin-top: 0; color: #0f172a; }
+        p { line-height: 1.6; color: #475569; }
+        label { font-weight: 600; display: block; margin-bottom: 8px; }
+        input[type="text"], textarea { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
+        textarea { min-height: 140px; resize: vertical; }
+        button { margin-top: 12px; background: #2563eb; color: white; border: none; padding: 12px 18px; border-radius: 8px; cursor: pointer; font-size: 15px; }
+        button:hover { background: #1d4ed8; }
+        .error { margin-top: 12px; color: #dc2626; background: #fee2e2; padding: 10px 12px; border-radius: 8px; }
+        .type-select { display: flex; gap: 12px; margin-bottom: 20px; }
+        .type-option { flex: 1; border: 2px solid #cbd5e1; border-radius: 10px; padding: 14px; cursor: pointer; text-align: center; }
+        .type-option.active { border-color: #2563eb; background: #eff6ff; }
+        .type-option input { display: none; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Explainable Phishing Analyzer</h2>
+        <p>
+            Choose whether you want to analyze a <strong>URL</strong>, an <strong>email</strong>, or a <strong>phone number</strong>,
+            then compare ML algorithms and explainability methods.
+        </p>
+
+        <form method="post" action="/analyze" id="analyze-form">
+            <label>What do you want to check?</label>
+            <div class="type-select">
+                <label class="type-option {% if analysis_type == 'url' %}active{% endif %}" id="url-option">
+                    <input type="radio" name="analysis_type" value="url" {% if analysis_type == 'url' %}checked{% endif %} />
+                    <strong>URL</strong><br />
+                    <span style="font-size:13px;color:#64748b;">Website link</span>
+                </label>
+                <label class="type-option {% if analysis_type == 'email' %}active{% endif %}" id="email-option">
+                    <input type="radio" name="analysis_type" value="email" {% if analysis_type == 'email' %}checked{% endif %} />
+                    <strong>Email</strong><br />
+                    <span style="font-size:13px;color:#64748b;">Subject, sender, body</span>
+                </label>
+                <label class="type-option {% if analysis_type == 'phone' %}active{% endif %}" id="phone-option">
+                    <input type="radio" name="analysis_type" value="phone" {% if analysis_type == 'phone' %}checked{% endif %} />
+                    <strong>Phone</strong><br />
+                    <span style="font-size:13px;color:#64748b;">Phone number</span>
+                </label>
+            </div>
+
+            <div id="url-panel" class="panel {% if analysis_type != 'email' %}active{% endif %}">
+                <label for="url_text">URL</label>
+                <input type="text" id="url_text" name="url_text" placeholder="e.g. https://secure-paypal-login.com" />
+            </div>
+
+            <div id="email-panel" class="panel {% if analysis_type == 'email' %}active{% endif %}">
+                <label for="email_sender">Sender (From)</label>
+                <input type="text" id="email_sender" name="email_sender" placeholder="e.g. registrar@kongu.ac.in" />
+
+                <label for="email_subject" style="margin-top:12px;">Subject</label>
+                <input type="text" id="email_subject" name="email_subject" placeholder="e.g. Urgent: Verify your account" />
+
+                <label for="email_body" style="margin-top:12px;">Email Body</label>
+                <textarea id="email_body" name="email_body" placeholder="Paste the email content here..."></textarea>
+            </div>
+
+            <div id="phone-panel" class="panel {% if analysis_type == 'phone' %}active{% endif %}">
+                <label for="phone_text">Phone Number</label>
+                <input type="text" id="phone_text" name="phone_text" placeholder="e.g. +1 800 123 4567" />
+            </div>
+
+            <button type="submit" id="analyze-btn">Analyze</button>
+        </form>
+
+        <p id="loading" style="display:none; margin-top:12px; color:#2563eb; font-weight:600;">
+            Analyzing and comparing models... this may take a few seconds.
+        </p>
+
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+    </div>
+    <script>
+        const urlOption = document.getElementById("url-option");
+        const emailOption = document.getElementById("email-option");
+        const phoneOption = document.getElementById("phone-option");
+        const urlPanel = document.getElementById("url-panel");
+        const emailPanel = document.getElementById("email-panel");
+        const phonePanel = document.getElementById("phone-panel");
+        const urlInput = document.getElementById("url_text");
+        const phoneInput = document.getElementById("phone_text");
+
+        function setMode(mode) {
+            const isEmail = mode === "email";
+            const isPhone = mode === "phone";
+            urlOption.classList.toggle("active", !isEmail && !isPhone);
+            emailOption.classList.toggle("active", isEmail);
+            phoneOption.classList.toggle("active", isPhone);
+            urlPanel.classList.toggle("active", !isEmail && !isPhone);
+            emailPanel.classList.toggle("active", isEmail);
+            phonePanel.classList.toggle("active", isPhone);
+            urlInput.required = !isEmail && !isPhone;
+            phoneInput.required = isPhone;
+        }
+
+        document.querySelectorAll('input[name="analysis_type"]').forEach((radio) => {
+            radio.addEventListener("change", (event) => setMode(event.target.value));
+        });
+
+        setMode(document.querySelector('input[name="analysis_type"]:checked').value);
+
+        document.getElementById("analyze-form").addEventListener("submit", function () {
+            document.getElementById("loading").style.display = "block";
+            document.getElementById("analyze-btn").disabled = true;
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+subject,sender,body,label
+Semester Exam Schedule,registrar@kongu.ac.in,"Dear students, the semester exam schedule is published on the college portal. Please check your hall ticket.",0
+Project Submission Reminder,faculty@kongu.ac.in,"This is a reminder to submit your final year project report before Friday.",0
+Meeting Confirmation,hr@google.com,"Your interview is confirmed for tomorrow at 10 AM. Join using the calendar invite.",0
+Library Book Due Notice,library@mit.edu,"Your borrowed book is due in 3 days. Renew online if needed.",0
+Course Registration Open,admissions@stanford.edu,"Course registration for the fall semester is now open for enrolled students.",0
+Team Standup Notes,manager@microsoft.com,"Here are the notes from today's standup. Action items are listed below.",0
+Invoice for March Services,billing@amazon.in,"Please find attached the invoice for your AWS services used in March.",0
+Password Reset Request,noreply@github.com,"We received a request to reset your password. If this was you, use the secure link below.",0
+Newsletter - Tech Updates,newsletter@python.org,"This month's Python community newsletter includes release updates and event announcements.",0
+Internship Offer Letter,careers@flipkart.com,"Congratulations! Please review the attached internship offer letter.",0
+Weekly Status Report,lead@infosys.com,"Please find the weekly status report attached. No action is required unless noted.",0
+Conference Invite,events@ieee.org,"You are invited to the upcoming IEEE conference. Registration details are available online.",0
+Parents Meeting Notice,principal@annauniv.edu,"Parents meeting is scheduled next Saturday in the auditorium. Attendance is requested.",0
+Scholarship Update,office@vit.ac.in,"Your scholarship documents have been verified successfully. Disbursement will follow shortly.",0
+Order Confirmation,orders@flipkart.com,"Your order has been confirmed and will be delivered in 2-3 days.",0
+URGENT: Verify Your PayPal Account Now!,security@paypa1-secure.com,"Your PayPal account will be suspended in 24 hours. Click http://paypa1-secure.com/login to verify immediately!!!",1
+Action Required: Bank Account Locked,alerts@secure-bank-update.net,"We detected unusual activity. Confirm your identity at http://bank-login-update.net/secure NOW or lose access.",1
+You Won $5000 - Claim Prize!,winner@free-prize-winner.click,"CONGRATULATIONS!!! You are the lucky winner. Click http://free-prize-winner.click to claim your cash prize.",1
+Microsoft Account Suspended,notice@microsoft-login-secure.xyz,"Your Microsoft account has been suspended due to suspicious login. Restore access: http://microsoft-login-secure.xyz",1
+IRS Tax Refund Pending,refund@tax-refund-claim.tk,"Final notice: your tax refund of $2,340 is pending. Submit bank details at http://tax-refund-claim.tk",1
+Netflix Payment Failed - Update Card,billing@netflix-billing-update.ga,"We could not process your payment. Update your card within 12 hours: http://netflix-billing-update.ga",1
+Apple ID Locked - Confirm Now,apple@apple-id-locked-verify.cf,"Your Apple ID is locked for security reasons. Verify immediately at http://apple-id-locked-verify.cf",1
+DHL Shipment Fee Required,shipping@dhl-payment-request.ml,"Pay the customs fee of $3.99 to release your package. Pay here: http://dhl-payment-request.ml",1
+WhatsApp Prize Winner,prize@whatsapp-prize-winner.top,"You won a WhatsApp anniversary gift! Claim within 24 hours: http://whatsapp-prize-winner.top",1
+CEO Wire Transfer Request,ceo@gmail.com,"I need you to process an urgent wire transfer before end of day. Reply with your phone number.",1
+Security Alert Verify Login,support@yahoo.com,"Unusual login detected. Verify password immediately using http://fake-login-portal.biz/account",1
+Account Suspend Warning!!!,alerts@outlook.com,"FINAL NOTICE!!! Your bank account will be closed. Confirm credential update ASAP: http://evil-bank.ru/login",1
+Crypto Wallet Refund,admin@proton.me,"Send bitcoin wallet payment of $450 for refund processing within 24 hours. Act now!!!",1
+Password Expiry Urgent,it-support@hotmail.com,"Your password will expire today. Click http://password-reset-fake.tk to update credentials NOW",1
+Lottery Winner Claim,lottery@mail.com,"You have won INR 1000000. Submit SSN and bank details to claim prize immediately!!!",1
+Account Update Confirmation,service@apple.com,"Your Apple ID has been temporarily locked. Verify your account here: http://apple-support-verify.com",1
+Important: Verify Your Gmail,security@goggle.com,"Your Gmail account has unusual activity. Verify now at http://gmail-security-check.com",1
+Payment Failed Notice,billing@amazon.in,"Your Amazon payment failed. Update payment information immediately or your order will be canceled.",1
+Urgent: Confirm Your Account,alerts@microsoft.com,"Unusual sign-in activity detected. Confirm your identity at http://microsoft-security-alert.com",1
+Refund Pending,refunds@paypal.com,"A refund is pending on your account. Please login at http://paypal-refund-update.com to claim it.",1
+Account Locked,security@facebook.com,"Your Facebook account has been locked. Restore it by verifying your details immediately.",1
+Delivery Pending,orders@flipkart.com,"Your package delivery is delayed. Click http://flipkart-delivery-update.com to reschedule.",1
+Tax Notification,taxoffice@irs.gov,"You have a pending tax refund. Submit your bank details to receive the refund.",1
+Bank Security Alert,alert@icicibank.com,"We noticed suspicious activity on your account. Confirm your details now.",1
+Official Meeting Reminder,hr@company.com,"Reminder: team meeting tomorrow at 11 AM in conference room A.",0
+Doctor Appointment Confirmation,appointments@healthcare.org,"Your appointment with Dr. Patel is confirmed for Wednesday at 3:30 PM.",0
+Subscription Renewal Notice,newsletter@medium.com,"Your subscription will renew automatically next month. No action is needed.",0
+Invoice from Vodafone,billing@vodafone.co.uk,"Your mobile bill is ready. View your invoice in the secure customer portal.",0
+School Registration Complete,office@schools.edu,"Your child's registration has been successfully processed.",0
+Conference Registration,events@techconf.com,"Thank you for registering for the AI conference. Please find the agenda attached.",0
+Flight Itinerary,travel@airline.com,"Your flight booking is confirmed. Check-in opens 24 hours before departure.",0
+Secure Delivery Notification,delivery@dhl.com,"Your DHL shipment is ready for pickup at the local service point.",0
+Password Change Alert,security@netflix.com,"Your password was changed successfully. If this was not you, contact support.",0

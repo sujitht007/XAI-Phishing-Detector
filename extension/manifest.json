@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "XAI Phishing Detector",
+  "description": "Analyze URLs, emails, and phone numbers for phishing using your local Flask backend.",
+  "version": "1.0.0",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://localhost:5000/*",
+    "https://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "XAI Phishing Detector"
+  }
+}
