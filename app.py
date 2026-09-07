@@ -59,8 +59,15 @@ def evaluate_email(sender: str):
     # Prefer ML model if available; otherwise use dedicated email-address-only heuristic pipeline
     if email_models_loaded:
         features = extract_features_from_sender(sender)
-        trusted_override = False
-        trusted_note = ""
+        sender_local_typo = features.get("sender_local_typo") == 1
+        trusted_override = features.get("is_trusted_sender") == 1 and not sender_local_typo
+        trusted_note = (
+            " Official corporate or institutional sender domain recognized."
+            if trusted_override
+            else " Sender ID does not exactly match the verified recruitment mailbox."
+            if sender_local_typo
+            else ""
+        )
         return run_evaluation(
             email_models,
             email_x_train,
@@ -72,6 +79,7 @@ def evaluate_email(sender: str):
             trusted_override,
             trusted_note,
             "email",
+            forced_prediction="Phishing" if sender_local_typo else None,
         )
 
     r = analyze_email_address(sender)
