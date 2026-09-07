@@ -165,7 +165,6 @@ def is_clearly_legitimate_phone(features: dict) -> bool:
     return (
         features.get("contains_alpha") == 0
         and features.get("has_suspicious_prefix") == 0
-        and features.get("has_repeated_digits") == 0
         and features.get("digit_diversity", 0) >= 0.5
         and features.get("country_code_known") == 1
         and features.get("has_short_code") == 0
