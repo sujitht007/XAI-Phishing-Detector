@@ -12,5 +12,5 @@ emails = [
     ("Team meeting", "ceo@gmail.com", "Send me your phone number urgently for a wire transfer."),
 ]
 for subject, sender, body in emails:
-    r = evaluate_email(subject, sender, body)
-    print(sender, "->", r["best_prediction"], "| best:", r["best_model"])
+    r = evaluate_email(sender)
+    print(sender, "->", r["best_prediction"], "| best:", r["best_model"], "| label:", r.get("explanation"))

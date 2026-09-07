@@ -3,9 +3,10 @@ import os
 from flask import Flask, jsonify, render_template, request
 
 from src.email_features import (
-    EMAIL_FEATURE_COLUMNS,
-    extract_features_from_email,
-    is_clearly_legitimate_email,
+    EMAIL_SENDER_FEATURE_COLUMNS,
+    extract_features_from_sender,
+    heuristic_sender_check,
+    analyze_email_address,
 )
 from src.evaluator import load_model_bundle, run_evaluation
 from src.features import FEATURE_COLUMNS, extract_features_from_url, is_clearly_legitimate
@@ -13,6 +14,7 @@ from src.phone_features import (
     PHONE_FEATURE_COLUMNS,
     extract_features_from_phone,
     is_clearly_legitimate_phone,
+    is_valid_phone,
 )
 
 app = Flask(__name__)
@@ -20,16 +22,24 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 url_models, url_x_train, url_explainer_cache = load_model_bundle(BASE_DIR)
-email_models, email_x_train, email_explainer_cache = load_model_bundle(BASE_DIR, "email_")
 phone_models, phone_x_train, phone_explainer_cache = load_model_bundle(BASE_DIR, "phone_")
+
+# Try to load email models (optional). If not present, email_models_* will be None.
+try:
+    email_models, email_x_train, email_explainer_cache = load_model_bundle(BASE_DIR, "email_")
+    email_models_loaded = True
+except Exception:
+    email_models = None
+    email_x_train = None
+    email_explainer_cache = None
+    email_models_loaded = False
 
 
 def evaluate_url(url: str):
     features = extract_features_from_url(url)
     trusted_override = is_clearly_legitimate(features)
     trusted_note = (
-        " This URL belongs to a trusted institutional domain (.ac.in, .edu, .gov, etc.) "
-        "with no phishing indicators, so it is treated as legitimate."
+        " This URL matches a known legitimate domain with no phishing indicators."
         if trusted_override
         else ""
     )
@@ -47,32 +57,79 @@ def evaluate_url(url: str):
     )
 
 
-def evaluate_email(subject: str, sender: str, body: str):
-    features = extract_features_from_email(subject, sender, body)
-    trusted_override = is_clearly_legitimate_email(features)
-    trusted_note = (
-        " This email comes from a trusted institutional sender with no phishing indicators, "
-        "so it is treated as legitimate."
-        if trusted_override
-        else ""
-    )
-    display = f"From: {sender or 'N/A'} | Subject: {subject or 'N/A'}"
-    return run_evaluation(
-        email_models,
-        email_x_train,
-        email_explainer_cache,
-        features,
-        EMAIL_FEATURE_COLUMNS,
-        "Email",
-        display,
-        trusted_override,
-        trusted_note,
-        "email",
-    )
+def evaluate_email(sender: str):
+    # Prefer ML model if available; otherwise use dedicated email-address-only heuristic pipeline
+    if email_models_loaded:
+        features = extract_features_from_sender(sender)
+        trusted_override = False
+        trusted_note = ""
+        return run_evaluation(
+            email_models,
+            email_x_train,
+            email_explainer_cache,
+            features,
+            EMAIL_SENDER_FEATURE_COLUMNS,
+            "Sender",
+            sender,
+            trusted_override,
+            trusted_note,
+            "email",
+        )
+
+    r = analyze_email_address(sender)
+    label = r.get("label", "Invalid Email Address")
+    # Map labels to previous field meanings
+    prediction_map = {
+        "Invalid Email Address": "Invalid",
+        "Suspicious Email Address": "Suspicious",
+        "Likely Legitimate Email Address": "Legit",
+    }
+    mapped_prediction = prediction_map.get(label, "Suspicious")
+    confidence = r.get("confidence", 0.0)
+    explanation = r.get("explanation", "")
+    features = r.get("features", {})
+
+    return {
+        "analysis_type": "email",
+        "input_label": "Sender",
+        "input_value": sender,
+        "features": features,
+        "feature_columns": r.get("feature_columns", EMAIL_SENDER_FEATURE_COLUMNS),
+        "best_model": "EmailAddressPipeline",
+        "best_prediction": mapped_prediction,
+        "best_confidence": confidence,
+        "model_results": [],
+        "best_explainer": "",
+        "explainer_results": [],
+        "selected_top_features": [],
+        "explanation": explanation,
+        "trusted_override": mapped_prediction == "Legit",
+    }
 
 
 def evaluate_phone(phone_number: str):
     features = extract_features_from_phone(phone_number)
+
+    # Validate format first — treat malformed numbers as phishing heuristic
+    if not is_valid_phone(phone_number):
+        trusted_override = False
+        return {
+            "analysis_type": "phone",
+            "input_label": "Phone",
+            "input_value": phone_number,
+            "features": features,
+            "feature_columns": PHONE_FEATURE_COLUMNS,
+            "best_model": "Heuristic",
+            "best_prediction": "Phishing",
+            "best_confidence": 0.99,
+            "model_results": [],
+            "best_explainer": "",
+            "explainer_results": [],
+            "selected_top_features": [],
+            "explanation": "Input rejected: phone number format is invalid. Marked as Phishing by heuristic.",
+            "trusted_override": False,
+        }
+
     trusted_override = is_clearly_legitimate_phone(features)
     trusted_note = (
         " This phone number looks like a valid international contact number with no phishing flags, "
@@ -104,16 +161,15 @@ def analyze():
     analysis_type = request.form.get("analysis_type", "url").strip().lower()
 
     if analysis_type == "email":
-        subject = request.form.get("email_subject", "").strip()
+        # For new flow we only require an email address (sender)
         sender = request.form.get("email_sender", "").strip()
-        body = request.form.get("email_body", "").strip()
-        if not body and not subject:
+        if not sender:
             return render_template(
                 "index.html",
-                error="Please enter at least an email subject or body.",
+                error="Please enter the sender's email address.",
                 analysis_type="email",
             ), 400
-        result = evaluate_email(subject, sender, body)
+        result = evaluate_email(sender)
     elif analysis_type == "phone":
         phone_number = request.form.get("phone_text", "").strip()
         if not phone_number:
@@ -153,12 +209,10 @@ def predict():
         payload = request.get_json(silent=True) or {}
         analysis_type = payload.get("analysis_type", "url").strip().lower()
         if analysis_type == "email":
-            subject = payload.get("subject", "")
             sender = payload.get("sender", "")
-            body = payload.get("body", "")
-            if not body and not subject:
-                return jsonify({"error": "Please provide email subject or body."}), 400
-            return jsonify(evaluate_email(subject, sender, body))
+            if not sender:
+                return jsonify({"error": "Please provide sender email address."}), 400
+            return jsonify(evaluate_email(sender))
         if analysis_type == "phone":
             phone_number = payload.get("phone", "")
             if not phone_number:
@@ -171,12 +225,10 @@ def predict():
 
     analysis_type = request.form.get("analysis_type", "url").strip().lower()
     if analysis_type == "email":
-        subject = request.form.get("email_subject", "")
-        sender = request.form.get("email_sender", "")
-        body = request.form.get("email_body", "")
-        if not body and not subject:
-            return jsonify({"error": "Please provide email subject or body."}), 400
-        return jsonify(evaluate_email(subject, sender, body))
+            sender = request.form.get("email_sender", "")
+            if not sender:
+                return jsonify({"error": "Please provide sender email address."}), 400
+            return jsonify(evaluate_email(sender))
     if analysis_type == "phone":
         phone_number = request.form.get("phone_text", "")
         if not phone_number:
@@ -190,4 +242,6 @@ def predict():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",
+            port=int(os.environ.get("PORT",5000))
+            )

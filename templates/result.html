@@ -23,6 +23,18 @@
 <body>
     <div class="container">
         <h2>Phishing Detection &amp; XAI Comparison</h2>
+        {% if analysis_type == 'email' %}
+        <div class="card">
+            <p><strong>Analysis type:</strong> {{ analysis_type|upper }}</p>
+            <p><strong>Analyzed {{ input_label }}:</strong> {{ input_value }}</p>
+            <p>
+                <strong>Verdict:</strong>
+                <span class="badge green">{{ best_prediction }}</span>
+                (confidence: {{ best_confidence }})
+            </p>
+            <p><strong>Summary:</strong> {{ explanation }}</p>
+        </div>
+        {% else %}
         <div class="card">
             <p><strong>Analysis type:</strong> {{ analysis_type|upper }}</p>
             <p><strong>Analyzed {{ input_label }}:</strong> {{ input_value }}</p>
@@ -37,7 +49,9 @@
             </p>
             <p><strong>Summary:</strong> {{ explanation }}</p>
         </div>
+        {% endif %}
 
+        {% if analysis_type != 'email' %}
         <h3>ML Algorithm Comparison</h3>
         <table>
             <tr>
@@ -109,6 +123,7 @@
         <div class="actions">
             <a href="/">Analyze another</a>
         </div>
+        {% endif %}
     </div>
 </body>
 </html>

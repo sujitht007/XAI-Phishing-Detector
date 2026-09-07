@@ -42,7 +42,7 @@
                 <label class="type-option {% if analysis_type == 'email' %}active{% endif %}" id="email-option">
                     <input type="radio" name="analysis_type" value="email" {% if analysis_type == 'email' %}checked{% endif %} />
                     <strong>Email</strong><br />
-                    <span style="font-size:13px;color:#64748b;">Subject, sender, body</span>
+                    <span style="font-size:13px;color:#64748b;">Sender email only</span>
                 </label>
                 <label class="type-option {% if analysis_type == 'phone' %}active{% endif %}" id="phone-option">
                     <input type="radio" name="analysis_type" value="phone" {% if analysis_type == 'phone' %}checked{% endif %} />
@@ -59,12 +59,7 @@
             <div id="email-panel" class="panel {% if analysis_type == 'email' %}active{% endif %}">
                 <label for="email_sender">Sender (From)</label>
                 <input type="text" id="email_sender" name="email_sender" placeholder="e.g. registrar@kongu.ac.in" />
-
-                <label for="email_subject" style="margin-top:12px;">Subject</label>
-                <input type="text" id="email_subject" name="email_subject" placeholder="e.g. Urgent: Verify your account" />
-
-                <label for="email_body" style="margin-top:12px;">Email Body</label>
-                <textarea id="email_body" name="email_body" placeholder="Paste the email content here..."></textarea>
+                <p style="font-size:13px;color:#64748b;margin-top:8px;">Enter sender email only — subject and body are not required.</p>
             </div>
 
             <div id="phone-panel" class="panel {% if analysis_type == 'phone' %}active{% endif %}">

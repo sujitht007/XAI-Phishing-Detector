@@ -11,6 +11,22 @@ const form = document.getElementById("analyze-form");
 const fillUrlBtn = document.getElementById("fill-url-btn");
 let activeMode = "url";
 
+// Listen for storage changes (content script updates) and prefill inputs
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== 'local') return;
+  if (changes.observed_i) {
+    const newVal = changes.observed_i.newValue || '';
+    // If active mode is email, try to put into sender field; otherwise into url input
+    if (activeMode === 'email') {
+      const el = document.getElementById('email-sender');
+      if (el && !el.value) el.value = newVal;
+    } else if (activeMode === 'url') {
+      const el = document.getElementById('url-input');
+      if (el && !el.value) el.value = newVal;
+    }
+  }
+});
+
 function setMode(mode) {
   activeMode = mode;
   modeButtons.forEach((btn) => {
@@ -55,11 +71,9 @@ form.addEventListener("submit", async (event) => {
       return;
     }
   } else if (activeMode === "email") {
-    payload.subject = document.getElementById("email-subject").value.trim();
     payload.sender = document.getElementById("email-sender").value.trim();
-    payload.body = document.getElementById("email-body").value.trim();
-    if (!payload.subject && !payload.body) {
-      messageEl.textContent = "Please enter an email subject or body.";
+    if (!payload.sender) {
+      messageEl.textContent = "Please enter the sender's email address.";
       return;
     }
   } else if (activeMode === "phone") {

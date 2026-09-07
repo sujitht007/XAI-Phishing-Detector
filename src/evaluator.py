@@ -2,6 +2,7 @@ import os
 
 import joblib
 import pandas as pd
+from collections import Counter
 
 from src.evaluation import compare_explainability_methods, compare_ml_models
 from src.explainability import ExplainerCache
@@ -22,6 +23,56 @@ def run_evaluation(
     x = pd.DataFrame([features], columns=feature_columns)
 
     model_results, best_model = compare_ml_models(models, x)
+
+    # For email inputs prefer the majority prediction when at least two models agree.
+    if input_type.lower() == "email":
+        preds = [item["prediction"] for item in model_results]
+        if preds:
+            most_common, cnt = Counter(preds).most_common(1)[0]
+            if cnt >= 2:
+                # choose best model among those that made the majority prediction
+                candidate = max((item for item in model_results if item["prediction"] == most_common), key=lambda i: i["score"])
+                best_model = {
+                    **candidate,
+                    "prediction": most_common,
+                    "confidence": candidate["confidence"],
+                }
+                ensemble_note = " Ensemble majority-vote applied for email inputs."
+
+    heuristic_flag = False
+    heuristic_note = ""
+    ensemble_note = ""
+    if input_type.lower() == "url":
+        from src.features import is_clearly_phishing, resolve_url_prediction
+
+        if is_clearly_phishing(features):
+            heuristic_flag = True
+            heuristic_note = (
+                " Heuristic override: malformed URL, unknown institutional domain, "
+                "or suspicious path on a trusted-looking TLD."
+            )
+        else:
+            prediction, confidence, best_model = resolve_url_prediction(model_results, features)
+            best_model = {
+                **best_model,
+                "prediction": prediction,
+                "confidence": round(confidence, 3),
+            }
+            ensemble_note = (
+                " Ensemble decision applied to reduce false positives on well-formed URLs."
+                if prediction == "Legit" and any(item["prediction"] == "Phishing" for item in model_results)
+                else ""
+            )
+
+    if heuristic_flag:
+        for item in model_results:
+            item["prediction"] = "Phishing"
+            item["confidence"] = max(item["confidence"], 0.95)
+        best_model = {
+            **best_model,
+            "prediction": "Phishing",
+            "confidence": max(best_model["confidence"], 0.95),
+        }
 
     if trusted_override:
         best_model = {
@@ -50,7 +101,7 @@ def run_evaluation(
         f"{best_explainer['name']} is the best explainability method "
         f"(score: {best_explainer['score']}, robustness: {best_explainer['robustness']}, "
         f"complexity: {best_explainer['complexity']}s)."
-        f"{trusted_note}"
+        f"{trusted_note}{heuristic_note}{ensemble_note}"
     )
 
     return {

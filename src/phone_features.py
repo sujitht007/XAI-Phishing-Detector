@@ -80,6 +80,7 @@ def is_clearly_legitimate_phone(features: dict) -> bool:
         and features.get("has_repeated_digits") == 0
         and features.get("digit_diversity", 0) >= 0.5
         and features.get("country_code_known") == 1
+        and features.get("has_short_code") == 0
     )
 
 
@@ -100,3 +101,34 @@ def extract_features_from_phone(phone: str) -> dict:
         "contains_alpha": 1 if re.search(r"[A-Za-z]", original_phone) else 0,
         "has_short_code": _has_short_code(original_phone),
     }
+
+
+def is_valid_phone(phone: str) -> bool:
+    """Basic validation for phone number format before ML prediction.
+
+    Rules:
+    - No alphabetic characters
+    - Optional leading '+' only at start
+    - Digit count between 7 and 15 (inclusive) after removing non-digits
+    - Reject very short numeric short-codes (3-6 digits)
+    """
+    if phone is None:
+        return False
+    s = phone.strip()
+    # Reject alphabetic characters
+    if re.search(r"[A-Za-z]", s):
+        return False
+
+    # '+' only allowed at start
+    if '+' in s[1:]:
+        return False
+
+    digits = re.sub(r"\D", "", s)
+    if not digits:
+        return False
+    if len(digits) < 7 or len(digits) > 15:
+        return False
+    # Reject short-codes explicitly
+    if 3 <= len(digits) <= 6:
+        return False
+    return True
