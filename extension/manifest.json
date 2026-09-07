@@ -15,8 +15,7 @@
     }
   ],
   "host_permissions": [
-    "http://localhost:5000/*",
-    "https://localhost:5000/*"
+    "https://xai-phishing-detector-3ipl.onrender.com/"
   ],
   "action": {
     "default_popup": "popup.html",
