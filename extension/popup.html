@@ -6,42 +6,173 @@
   <title>XAI Phishing Detector</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
+
   <div class="container">
+
     <h1>XAI Phishing Detector</h1>
-    <p>Analyze a URL, email, or phone number using your local Flask server.</p>
+
+    <p class="description">
+      Analyze a URL, email, or phone number using our
+      XAI phishing detection server.
+    </p>
+
+
+    <!-- ======================================================
+         ANALYSIS MODE SELECTOR
+    ======================================================= -->
 
     <div class="selectors">
-      <button class="mode-btn active" data-mode="url">URL</button>
-      <button class="mode-btn" data-mode="email">Email</button>
-      <button class="mode-btn" data-mode="phone">Phone</button>
+
+      <button
+        class="mode-btn active"
+        data-mode="url"
+        type="button">
+        URL
+      </button>
+
+      <button
+        class="mode-btn"
+        data-mode="email"
+        type="button">
+        Email
+      </button>
+
+      <button
+        class="mode-btn"
+        data-mode="phone"
+        type="button">
+        Phone
+      </button>
+
     </div>
 
+
+    <!-- ======================================================
+         ANALYSIS FORM
+    ======================================================= -->
+
     <form id="analyze-form">
+
+
+      <!-- ================= URL PANEL ================= -->
+
       <div class="panel" id="url-panel">
-        <label for="url-input">URL</label>
-        <input id="url-input" name="url" placeholder="https://example.com" />
-        <button type="button" id="fill-url-btn" class="small-btn">Use current page URL</button>
+
+        <label for="url-input">
+          URL
+        </label>
+
+        <input
+          id="url-input"
+          name="url"
+          type="text"
+          placeholder="https://example.com"
+          autocomplete="off"
+        />
+
+        <button
+          type="button"
+          id="fill-url-btn"
+          class="small-btn">
+          Use current page URL
+        </button>
+
       </div>
 
-      <div class="panel hidden" id="email-panel">
-        <label for="email-sender">Sender (email address only)</label>
-        <input id="email-sender" name="sender" placeholder="security@example.com" />
-        <p class="note">This mode analyzes only the sender email address — no subject or body required.</p>
+
+      <!-- ================= EMAIL PANEL ================= -->
+
+      <div
+        class="panel hidden"
+        id="email-panel">
+
+        <label for="email-sender">
+          Sender Email
+        </label>
+
+        <input
+          id="email-sender"
+          name="sender"
+          type="email"
+          placeholder="security@example.com"
+          autocomplete="off"
+        />
+
+        <p class="note">
+          This mode analyzes only the sender email address.
+          No subject or email body is required.
+        </p>
+
       </div>
 
-      <div class="panel hidden" id="phone-panel">
-        <label for="phone-input">Phone number</label>
-        <input id="phone-input" name="phone" placeholder="+1 800 123 4567" />
+
+      <!-- ================= PHONE PANEL ================= -->
+
+      <div
+        class="panel hidden"
+        id="phone-panel">
+
+        <label for="phone-input">
+          Phone Number
+        </label>
+
+        <input
+          id="phone-input"
+          name="phone"
+          type="text"
+          placeholder="+1 800 123 4567"
+          autocomplete="off"
+        />
+
       </div>
 
-      <button type="submit" id="submit-btn">Analyze</button>
+
+      <!-- ================= SUBMIT ================= -->
+
+      <button
+        type="submit"
+        id="submit-btn">
+        Analyze
+      </button>
+
     </form>
 
-    <div id="message" class="message"></div>
-    <div id="result" class="result hidden"></div>
-    <p class="note">Note: your Flask app must be running at <code>http://localhost:5000</code>.</p>
+
+    <!-- ======================================================
+         STATUS MESSAGE
+    ======================================================= -->
+
+    <div
+      id="message"
+      class="message">
+    </div>
+
+
+    <!-- ======================================================
+         RESULT
+    ======================================================= -->
+
+    <div
+      id="result"
+      class="result hidden">
+    </div>
+
+
+    <!-- ======================================================
+         FOOTER NOTE
+    ======================================================= -->
+
+    <p class="note footer-note">
+      Analysis is performed using the XAI Phishing Detector
+      cloud server.
+    </p>
+
   </div>
+
+
   <script src="popup.js"></script>
+
 </body>
 </html>
