@@ -409,6 +409,8 @@ def evaluate_email(sender: str):
         features = extract_features_from_sender(
             sender
         )
+        sender_local_typo = features.get("sender_local_typo") == 1
+        trusted_override = features.get("is_trusted_sender") == 1 and not sender_local_typo
 
         return run_evaluation(
             email_models,
@@ -418,9 +420,10 @@ def evaluate_email(sender: str):
             EMAIL_SENDER_FEATURE_COLUMNS,
             "Sender",
             sender,
-            False,
-            "",
+            trusted_override,
+            " Sender ID does not exactly match the verified recruitment mailbox." if sender_local_typo else "",
             "email",
+            forced_prediction="Phishing" if sender_local_typo else None,
         )
 
     result = analyze_email_address(
@@ -613,6 +616,7 @@ def run_evaluation(
     trusted_override: bool,
     trusted_note: str,
     input_type: str,
+    forced_prediction: str | None = None,
 ):
     """
     Main evaluation pipeline.
@@ -786,6 +790,16 @@ def run_evaluation(
                 item["confidence"] = (
                     best_model["confidence"]
                 )
+
+    if forced_prediction:
+        best_model = {
+            **best_model,
+            "prediction": forced_prediction,
+            "confidence": max(best_model["confidence"], 0.95),
+        }
+        for item in model_results:
+            item["prediction"] = forced_prediction
+            item["confidence"] = max(item["confidence"], 0.95)
 
     # -------------------------------------------------
     # STEP 6: Explainability

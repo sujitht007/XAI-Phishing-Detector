@@ -63,6 +63,39 @@ TRUSTED_SENDER_SUFFIXES = [
     "ac.in", "edu", "edu.in", "gov.in", "gov", "gov.uk", "ac.uk", "nic.in",
 ]
 
+TRUSTED_CORPORATE_DOMAINS = {
+    "accenture.com", "adobe.com", "amazon.com", "amazon.in", "apple.com",
+    "aws.amazon.com", "cisco.com", "cognizant.com", "deloitte.com", "dell.com",
+    "facebook.com", "flipkart.com", "google.com", "hcl.com", "hcltech.com", "ibm.com",
+    "infosys.com", "intel.com", "kpmg.com", "linkedin.com", "meta.com", "microsoft.com",
+    "microsoftonline.com", "nvidia.com", "oracle.com", "paloaltonetworks.com",
+    "paypal.com", "pwc.com", "salesforce.com", "sap.com", "schneider-electric.com",
+    "techmahindra.com", "tcs.com", "tcs.co.in", "uber.com", "vmware.com",
+    "wipro.com", "zoho.com", "ey.com",
+}
+
+KNOWN_CORPORATE_BRANDS = {
+    "accenture", "adobe", "amazon", "apple", "cisco", "cognizant", "deloitte",
+    "dell", "facebook", "google", "hcl", "hcltech", "ibm", "infosys", "intel",
+    "kpmg", "meta", "microsoft", "nvidia", "oracle", "paypal", "pwc", "salesforce",
+    "sap", "techmahindra", "tcs", "uber", "vmware", "wipro", "zoho",
+}
+
+RECRUITMENT_LOCAL_PARTS = {
+    "careers", "recruitment", "jobs", "campus.recruitment", "campus.hiring",
+    "talent.acquisition", "careers.india", "campus", "hr.recruitment", "earlycareers",
+}
+
+KNOWN_RECRUITMENT_LOCAL_PARTS = {
+    domain: set(RECRUITMENT_LOCAL_PARTS)
+    for domain in (
+        "tcs.com", "infosys.com", "accenture.com", "wipro.com", "apple.com",
+        "amazon.com", "zoho.com", "linkedin.com", "flipkart.com", "google.com",
+        "ey.com", "cognizant.com",
+    )
+}
+KNOWN_RECRUITMENT_LOCAL_PARTS["infosys.com"].add("infy_rec_helpdesk")
+
 
 def _extract_sender_domain(sender: str) -> str:
     sender = (sender or "").strip().lower()
@@ -75,10 +108,42 @@ def _extract_sender_domain(sender: str) -> str:
 def _is_trusted_sender_domain(domain: str) -> int:
     if not domain:
         return 0
+    if domain in TRUSTED_CORPORATE_DOMAINS:
+        return 1
     for suffix in sorted(TRUSTED_SENDER_SUFFIXES, key=len, reverse=True):
         if domain == suffix or domain.endswith(f".{suffix}"):
             return 1
     return 0
+
+
+def _looks_like_corporate_impersonation(domain: str) -> bool:
+    if not domain or domain in TRUSTED_CORPORATE_DOMAINS:
+        return False
+    labels = re.split(r"[.-]", domain)
+    return any(brand in labels for brand in KNOWN_CORPORATE_BRANDS)
+
+
+def _edit_distance(left: str, right: str) -> int:
+    previous = list(range(len(right) + 1))
+    for left_index, left_char in enumerate(left, start=1):
+        current = [left_index]
+        for right_index, right_char in enumerate(right, start=1):
+            current.append(min(
+                current[-1] + 1,
+                previous[right_index] + 1,
+                previous[right_index - 1] + (left_char != right_char),
+            ))
+        previous = current
+    return previous[-1]
+
+
+def _looks_like_known_recruitment_typo(domain: str, local_part: str) -> bool:
+    normalized_local = local_part.lower()
+    return any(
+        normalized_local != known_local
+        and _edit_distance(normalized_local, known_local) <= 2
+        for known_local in KNOWN_RECRUITMENT_LOCAL_PARTS.get(domain, set())
+    )
 
 
 def _count_links(text: str) -> int:
@@ -173,6 +238,7 @@ def extract_features_from_sender(sender: str) -> dict:
     sender_domain_age = _estimate_domain_age_from_sender(domain)
     sender_is_free = 1 if domain in FREE_EMAIL_DOMAINS else 0
     is_trusted = _is_trusted_sender_domain(domain)
+    sender_local_typo = _looks_like_known_recruitment_typo(domain, local_part)
     local_has_digits = 1 if re.search(r"\d", local_part) else 0
     local_has_special = 1 if re.search(r"[^A-Za-z0-9._+-]", local_part) else 0
     domain_has_hyphen = 1 if "-" in domain else 0
@@ -187,6 +253,7 @@ def extract_features_from_sender(sender: str) -> dict:
         "local_has_special": local_has_special,
         "domain_has_hyphen": domain_has_hyphen,
         "domain_length": domain_length,
+        "sender_local_typo": 1 if sender_local_typo else 0,
     }
 
 
@@ -212,7 +279,7 @@ def heuristic_sender_check(sender: str) -> dict:
             "features": features,
         }
 
-    if features.get("is_trusted_sender") == 1:
+    if features.get("is_trusted_sender") == 1 and features.get("sender_local_typo") != 1:
         return {
             "prediction": "Legit",
             "confidence": 0.99,
@@ -298,18 +365,25 @@ def analyze_email_address(sender: str) -> dict:
 
     # Scoring: higher score => more suspicious
     score = 0.0
+    explanation = ""
     # Start with free email providers as weak risk
     if features.get("sender_is_free_email") == 1:
         score += 0.25
     # Trusted institutional domain reduces risk
-    if features.get("is_trusted_sender") == 1:
+    if features.get("is_trusted_sender") == 1 and not _looks_like_known_recruitment_typo(domain, local):
         score -= 0.6
+    if _looks_like_known_recruitment_typo(domain, local):
+        score += 0.7
+        explanation = "Sender ID is a near-match for a verified recruitment mailbox and may contain a spelling mistake."
     # Short local parts with digits are suspicious
     if features.get("local_has_digits") == 1 and features.get("local_part_length", 0) < 6:
         score += 0.3
     # Hyphens in domain and digits in domain add risk
     if features.get("domain_has_hyphen") == 1:
         score += 0.15
+    if _looks_like_corporate_impersonation(domain):
+        score += 0.45
+        explanation = "Domain resembles a known corporate brand but is not an official trusted domain."
     if domain_has_digits:
         score += 0.15
     # Many dots or plus tagging can be benign but sometimes used for obfuscation
@@ -339,7 +413,7 @@ def analyze_email_address(sender: str) -> dict:
     if score >= 0.45:
         label = "Suspicious Email Address"
         confidence = 0.6 + 0.4 * (score - 0.45) / (1.0 - 0.45)
-        explanation = f"Heuristic score={score:.2f} indicates multiple risky attributes."
+        explanation = explanation or f"Heuristic score={score:.2f} indicates multiple risky attributes."
     elif score >= 0.2:
         label = "Suspicious Email Address"
         confidence = 0.5 + 0.2 * (score - 0.2) / (0.45 - 0.2)
