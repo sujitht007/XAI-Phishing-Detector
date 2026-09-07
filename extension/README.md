@@ -1,6 +1,6 @@
 XAI Phishing Detector - Chrome Extension
 
-This extension integrates with the local XAI Phishing Detector Flask backend (http://localhost:5000) to analyze URLs, phone numbers, and email addresses.
+This extension integrates with the deployed XAI Phishing Detector Flask backend to analyze URLs, phone numbers, and email addresses.
 
 Key points:
 - Email mode analyzes ONLY the sender email address (no subject/body required).
@@ -23,4 +23,8 @@ Files:
 - popup.html, popup.js, styles.css: popup UI
 - content_script.js: observes page element with id `i` and syncs to storage
 
-For API backend, ensure Flask app is running at http://localhost:5000
+The extension uses this Render API endpoint:
+
+`https://xai-phishing-detector-3ipl.onrender.com/predict`
+
+To verify the deployment, open `https://xai-phishing-detector-3ipl.onrender.com` in a browser. Render may take a few seconds to wake after inactivity.

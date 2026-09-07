@@ -1,5 +1,8 @@
 import re
 
+import phonenumbers
+from phonenumbers import NumberParseException
+
 PHONE_FEATURE_COLUMNS = [
     "phone_length",
     "has_plus_prefix",
@@ -26,21 +29,86 @@ SUSPICIOUS_PREFIXES = [
     "666",
 ]
 
+DEFAULT_PHONE_REGION = "IN"
+
+# Keep product-specific metadata here; phonenumbers remains the source of truth
+# for country numbering plans and supports adding countries without new logic.
+COUNTRY_NUMBERING_RULES = {
+    "IN": {
+        "country_name": "India",
+        "iso_code": "IN",
+        "calling_code": "+91",
+        "national_number_lengths": (10,),
+        "national_prefix": "0",
+    },
+    "US": {
+        "country_name": "United States",
+        "iso_code": "US",
+        "calling_code": "+1",
+        "national_number_lengths": (10,),
+        "national_prefix": "1",
+    },
+    "CA": {
+        "country_name": "Canada",
+        "iso_code": "CA",
+        "calling_code": "+1",
+        "national_number_lengths": (10,),
+        "national_prefix": "1",
+    },
+    "GB": {
+        "country_name": "United Kingdom",
+        "iso_code": "GB",
+        "calling_code": "+44",
+        "national_number_lengths": None,
+        "national_prefix": "0",
+    },
+    "AE": {
+        "country_name": "United Arab Emirates",
+        "iso_code": "AE",
+        "calling_code": "+971",
+        "national_number_lengths": (9,),
+        "national_prefix": "0",
+    },
+}
+
 KNOWN_COUNTRY_CODES = [
-    "+1",
-    "+44",
-    "+91",
-    "+61",
-    "+81",
-    "+49",
-    "+33",
-    "+86",
-    "+7",
+    rule["calling_code"] for rule in COUNTRY_NUMBERING_RULES.values()
 ]
+COUNTRY_CALLING_CODES = sorted(
+    {code[1:] for code in KNOWN_COUNTRY_CODES}, key=len, reverse=True
+)
+
+
+def normalize_phone_number(phone: str) -> str:
+    """Return a canonical international form while preserving a leading '+'."""
+    if phone is None:
+        return ""
+    value = phone.strip()
+    if value.startswith("00"):
+        value = "+" + value[2:]
+    if value.startswith("+"):
+        return "+" + re.sub(r"\D", "", value[1:])
+    digits = re.sub(r"\D", "", value)
+    for calling_code in COUNTRY_CALLING_CODES:
+        if not digits.startswith(calling_code):
+            continue
+        region_rules = [
+            rule
+            for rule in COUNTRY_NUMBERING_RULES.values()
+            if rule["calling_code"] == f"+{calling_code}"
+        ]
+        national_length = len(digits) - len(calling_code)
+        if any(
+            rule["national_number_lengths"]
+            and national_length in rule["national_number_lengths"]
+            for rule in region_rules
+        ):
+            return f"+{digits}"
+    return digits
 
 
 def _normalize_phone(phone: str) -> str:
-    return re.sub(r"[\s\-().]+", "", phone.strip())
+    return normalize_phone_number(phone)
 
 
 def _has_repeated_digits(phone: str) -> int:
@@ -59,6 +127,26 @@ def _country_code_known(phone: str) -> int:
         if phone.startswith(code):
             return 1
     return 0
+
+
+def _country_code_digit_count(phone: str) -> int:
+    for code in KNOWN_COUNTRY_CODES:
+        if phone.startswith(code):
+            return len(code) - 1
+    return 0
+
+
+def _parse_phone(phone: str):
+    normalized = normalize_phone_number(phone)
+    if not normalized:
+        return None
+    try:
+        return phonenumbers.parse(
+            normalized,
+            None if normalized.startswith("+") else DEFAULT_PHONE_REGION,
+        )
+    except NumberParseException:
+        return None
 
 
 def _digit_diversity(phone: str) -> float:
@@ -104,31 +192,35 @@ def extract_features_from_phone(phone: str) -> dict:
 
 
 def is_valid_phone(phone: str) -> bool:
-    """Basic validation for phone number format before ML prediction.
+    """Validate a phone number using the numbering plan for its country.
 
     Rules:
     - No alphabetic characters
-    - Optional leading '+' only at start
-    - Digit count between 7 and 15 (inclusive) after removing non-digits
-    - Reject very short numeric short-codes (3-6 digits)
+    - Optional leading '+' only at start, with ``00`` converted to '+'
+    - Country and national-number rules are checked by ``phonenumbers``
     """
     if phone is None:
         return False
     s = phone.strip()
-    # Reject alphabetic characters
     if re.search(r"[A-Za-z]", s):
         return False
-
-    # '+' only allowed at start
-    if '+' in s[1:]:
+    if "+" in s[1:] or ("+" in s and not s.startswith("+")):
+        return False
+    normalized = normalize_phone_number(s)
+    if not normalized or normalized.startswith("+") and len(normalized) == 1:
+        return False
+    parsed = _parse_phone(normalized)
+    if parsed is None:
+        return False
+    if not phonenumbers.is_possible_number(parsed):
+        return False
+    if not phonenumbers.is_valid_number(parsed):
         return False
 
-    digits = re.sub(r"\D", "", s)
-    if not digits:
-        return False
-    if len(digits) < 7 or len(digits) > 15:
-        return False
-    # Reject short-codes explicitly
-    if 3 <= len(digits) <= 6:
-        return False
+    region = phonenumbers.region_code_for_number(parsed)
+    rules = COUNTRY_NUMBERING_RULES.get(region)
+    if rules and rules["national_number_lengths"]:
+        national_length = len(str(parsed.national_number))
+        if national_length not in rules["national_number_lengths"]:
+            return False
     return True

@@ -8,7 +8,19 @@ from src.email_features import (
     heuristic_sender_check,
     analyze_email_address,
 )
-from src.evaluator import load_model_bundle, run_evaluation
+from src.evaluator import (
+    email_explainer_cache,
+    email_models,
+    email_models_loaded,
+    email_x_train,
+    phone_explainer_cache,
+    phone_models,
+    phone_x_train,
+    run_evaluation,
+    url_explainer_cache,
+    url_models,
+    url_x_train,
+)
 from src.features import FEATURE_COLUMNS, extract_features_from_url, is_clearly_legitimate
 from src.phone_features import (
     PHONE_FEATURE_COLUMNS,
@@ -20,20 +32,6 @@ from src.phone_features import (
 app = Flask(__name__)
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-url_models, url_x_train, url_explainer_cache = load_model_bundle(BASE_DIR)
-phone_models, phone_x_train, phone_explainer_cache = load_model_bundle(BASE_DIR, "phone_")
-
-# Try to load email models (optional). If not present, email_models_* will be None.
-try:
-    email_models, email_x_train, email_explainer_cache = load_model_bundle(BASE_DIR, "email_")
-    email_models_loaded = True
-except Exception:
-    email_models = None
-    email_x_train = None
-    email_explainer_cache = None
-    email_models_loaded = False
-
 
 def evaluate_url(url: str):
     features = extract_features_from_url(url)
